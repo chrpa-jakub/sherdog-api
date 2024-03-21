@@ -12,8 +12,8 @@ type Fighter struct {
     Nickname string `json:"nickname"`
     Origin string  `json:"origin"`
     Age int `json:"age"`
-    Height float64 `json:"height"`
-    Weight float64 `json:"weight"`
+    Height string `json:"height"`
+    Weight string `json:"weight"`
     WeightClass string `json:"weightclass"`
     Gym string `json:"gym"`
     Wins Outcome `json:"win"`
@@ -70,10 +70,10 @@ func ParseFighter(id string, c *colly.Collector) (*Fighter, error) {
         fighter.Age = converts.ToInt(h.ChildText("tr:nth-child(1) > td > b"))
 
         heightRaw := strings.Split(h.ChildText("tr:nth-child(2) > td"), " ")
-        fighter.Height = converts.ToFloat64(heightRaw[len(heightRaw)-2])
+        fighter.Height = heightRaw[len(heightRaw)-2]
 
         weightRaw := strings.Split(h.ChildText("tr:nth-child(3) > td"), " ")
-        fighter.Weight = converts.ToFloat64(weightRaw[len(weightRaw)-2])
+        fighter.Weight = weightRaw[len(weightRaw)-2]
 
         fighter.Gym = h.ChildText("div.association-class > span")
 
