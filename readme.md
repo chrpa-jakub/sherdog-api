@@ -1,6 +1,7 @@
 # Sherdog "API"
 * Scrapes and parses given endpoint into a json 
-* Uses Redis as a cache due to sherdog having very harsh rate limits
+* Uses Redis as a cache
+* Should only be used as a proof of concept 
 
 ## Installation
 * Install docker (and docker compose) from your package manager
