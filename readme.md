@@ -3,11 +3,11 @@
 * Uses Redis as a cache due to sherdog having very harsh rate limits
 
 ## Installation
-* Install GO from your package manager
-* `go run .`
+* Install docker (and docker compose) from your package manager
+* `docker compose up`
 
 ## TODO
-* Make the API work for future events
+* Make the API work for upcoming events
 
 ## Usage
 `
