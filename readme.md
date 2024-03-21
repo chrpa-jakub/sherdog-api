@@ -1,12 +1,12 @@
 # Sherdog "API"
 * Scrapes and parses given endpoint into a json 
+* Uses Redis as a cache due to sherdog having very harsh rate limits
 
 ## Installation
 * Install GO from your package manager
 * `go run .`
 
 ## TODO
-* Add a cache
 * Make the API work for future events
 
 ## Usage

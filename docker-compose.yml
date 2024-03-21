@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  sherdog-api:
+    hostname: sherdog-api 
+    ports:
+      - 8080:8080
+    build:
+      context: ./api-backend
+      dockerfile: Dockerfile
+    container_name: sherdog-api
+    environment:
+      - DB_CONN=redis://default:password@redis:6379
+    depends_on:
+      - redis
+  redis:
+    hostname: redis-sherdog-api
+    image: redis
+    container_name: redis-sherdog-api
+    ports:
+      - 6379
+    volumes:
+      - ./redis-data:/data
+    environment:
+      - REDIS_PASSWORD="password"
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=1

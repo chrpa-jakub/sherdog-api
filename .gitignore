@@ -1,1 +1,2 @@
-/sherdog-api
+/api-backend/sherdog-api
+/redis-data/*
