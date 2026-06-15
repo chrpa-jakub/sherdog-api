@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	domain "github.com/chrpa-jakub/sherdog-api/internal/domain/event"
 )
 
 func TestSherdogServiceGet(t *testing.T) {
@@ -103,7 +105,7 @@ func TestCachedServiceCachesMiss(t *testing.T) {
 	t.Parallel()
 
 	store := newMemoryStore()
-	service := NewCachedService(staticService{event: &Event{Name: "Parsed Event"}}, store)
+	service := NewCachedService(staticService{event: &domain.Event{Name: "Parsed Event"}}, store)
 
 	got, err := service.Get(context.Background(), "98494")
 	if err != nil {
@@ -118,16 +120,16 @@ func TestCachedServiceCachesMiss(t *testing.T) {
 }
 
 type staticService struct {
-	event *Event
+	event *domain.Event
 }
 
-func (s staticService) Get(context.Context, string) (*Event, error) {
+func (s staticService) Get(context.Context, string) (*domain.Event, error) {
 	return s.event, nil
 }
 
 type errorService struct{}
 
-func (errorService) Get(context.Context, string) (*Event, error) {
+func (errorService) Get(context.Context, string) (*domain.Event, error) {
 	return nil, errors.New("unexpected service call")
 }
 

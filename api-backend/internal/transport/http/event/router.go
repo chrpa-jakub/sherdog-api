@@ -2,6 +2,7 @@ package event
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/chrpa-jakub/sherdog-api/internal/domain/event"
@@ -22,8 +23,10 @@ func NewRouter(service event.Service) chi.Router {
 }
 
 func (h Handler) get(w http.ResponseWriter, r *http.Request) {
-	event, err := h.service.Get(r.Context(), chi.URLParam(r, "id"))
+	id := chi.URLParam(r, "id")
+	event, err := h.service.Get(r.Context(), id)
 	if err != nil {
+		log.Printf("fetch event failed id=%s err=%v", id, err)
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "could not fetch event"})
 		return
 	}

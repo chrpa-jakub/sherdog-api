@@ -2,9 +2,11 @@ package fighter
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/chrpa-jakub/sherdog-api/internal/domain/fighter"
+	"github.com/chrpa-jakub/sherdog-api/internal/util"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -22,8 +24,10 @@ func NewRouter(service fighter.Service) chi.Router {
 }
 
 func (h Handler) get(w http.ResponseWriter, r *http.Request) {
-	fighter, err := h.service.Get(r.Context(), fighter.ShortenID(chi.URLParam(r, "id")))
+	id := util.ShortenID(chi.URLParam(r, "id"))
+	fighter, err := h.service.Get(r.Context(), id)
 	if err != nil {
+		log.Printf("fetch fighter failed id=%s err=%v", id, err)
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "could not fetch fighter"})
 		return
 	}
