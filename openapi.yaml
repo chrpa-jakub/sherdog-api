@@ -1,0 +1,283 @@
+openapi: 3.1.0
+info:
+  title: Sherdog API
+  version: 0.1.0
+  description: Lightweight JSON API for Sherdog fighter profiles and event pages.
+servers:
+  - url: http://localhost:8080
+security: []
+paths:
+  /fighter/{id}:
+    get:
+      summary: Get a fighter profile
+      operationId: getFighter
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Sherdog fighter slug or numeric fighter ID.
+          schema:
+            type: string
+          examples:
+            slug:
+              value: Jiri-Prochazka-97529
+            numeric:
+              value: "97529"
+      responses:
+        "200":
+          description: Fighter profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Fighter"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /events/{id}:
+    get:
+      summary: Get an event fight card
+      operationId: getEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Sherdog event slug.
+          schema:
+            type: string
+          example: UFC-Fight-Night-279-Kape-vs-Horiguchi-2-112139
+      responses:
+        "200":
+          description: Event details and fight card.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+components:
+  responses:
+    BadRequest:
+      description: The page could not be fetched or parsed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          examples:
+            - could not fetch fighter
+    Fighter:
+      type: object
+      required:
+        - name
+        - nickname
+        - origin
+        - age
+        - height
+        - weight
+        - weightclass
+        - gym
+        - win
+        - loses
+        - draws
+        - nocontests
+        - upcomingfight
+        - fights
+      properties:
+        name:
+          type: string
+        nickname:
+          type: string
+        origin:
+          type: string
+        age:
+          type: integer
+          format: int32
+        height:
+          type: string
+          description: Height in centimeters when Sherdog exposes metric data.
+        weight:
+          type: string
+          description: Weight in kilograms when Sherdog exposes metric data.
+        weightclass:
+          type: string
+        gym:
+          type: string
+        win:
+          $ref: "#/components/schemas/Outcome"
+        loses:
+          $ref: "#/components/schemas/Outcome"
+        draws:
+          type: integer
+          format: int32
+        nocontests:
+          type: integer
+          format: int32
+        upcomingfight:
+          oneOf:
+            - $ref: "#/components/schemas/UpcomingFight"
+            - type: "null"
+        fights:
+          type: array
+          items:
+            $ref: "#/components/schemas/FighterFight"
+    Outcome:
+      type: object
+      required:
+        - total
+        - ko
+        - submission
+        - decision
+        - others
+      properties:
+        total:
+          type: integer
+          format: int32
+        ko:
+          type: integer
+          format: int32
+        submission:
+          type: integer
+          format: int32
+        decision:
+          type: integer
+          format: int32
+        others:
+          type: integer
+          format: int32
+    UpcomingFight:
+      type: object
+      required:
+        - opponent
+        - event
+        - date
+        - location
+      properties:
+        opponent:
+          $ref: "#/components/schemas/PersonLink"
+        event:
+          $ref: "#/components/schemas/ResourceLink"
+        date:
+          type: string
+          description: Sherdog start date, usually an ISO-8601 timestamp.
+          examples:
+            - "2026-06-20T00:00:00+00:00"
+        location:
+          type: string
+          examples:
+            - UFC Apex, Las Vegas, Nevada, United States
+    FighterFight:
+      type: object
+      required:
+        - outcome
+        - oponent
+        - event
+        - way
+        - round
+        - time
+      properties:
+        outcome:
+          type: string
+          examples:
+            - win
+            - loss
+            - draw
+        oponent:
+          $ref: "#/components/schemas/PersonLink"
+        event:
+          $ref: "#/components/schemas/ResourceLink"
+        way:
+          type: string
+          examples:
+            - TKO (Punches)
+        round:
+          type: integer
+          format: int32
+        time:
+          type: string
+          examples:
+            - "4:08"
+    Event:
+      type: object
+      required:
+        - name
+        - date
+        - organization
+        - fights
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+        organization:
+          type: string
+        fights:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventFight"
+    EventFight:
+      type: object
+      required:
+        - fighters
+        - way
+        - round
+        - time
+        - weightclass
+      properties:
+        fighters:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            $ref: "#/components/schemas/EventFighter"
+        way:
+          type: string
+          description: Empty for upcoming fights.
+        round:
+          type: integer
+          format: int32
+          description: Zero for upcoming fights.
+        time:
+          type: string
+          description: Empty for upcoming fights.
+        weightclass:
+          type: string
+    EventFighter:
+      allOf:
+        - $ref: "#/components/schemas/PersonLink"
+        - type: object
+          required:
+            - outcome
+          properties:
+            outcome:
+              type: string
+              description: Empty on scheduled undercard fights; often "yet to come" on scheduled main events.
+    PersonLink:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          examples:
+            - /fighter/Manel-Kape-101189
+    ResourceLink:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          examples:
+            - /events/UFC-Fight-Night-279-Kape-vs-Horiguchi-2-112139

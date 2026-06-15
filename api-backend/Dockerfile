@@ -5,7 +5,7 @@ WORKDIR /app
 COPY . .
 RUN go mod download
 
-RUN go build -o /sherdog-api
+RUN go build -o /sherdog-api ./cmd/sherdog-api
 
 EXPOSE 8080
 
