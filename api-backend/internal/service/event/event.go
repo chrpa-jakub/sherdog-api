@@ -126,16 +126,19 @@ func NewCachedService(next domain.Service, database Database) *CachedService {
 func (s *CachedService) Get(ctx context.Context, id string) (*domain.Event, error) {
 	key := cacheKey(id)
 	cached, err := s.database.Get(ctx, key)
+	if err != nil {
+		log.Printf("event cache miss id=%s key=%s err=%v", id, key, err)
+	}
 	if err == nil {
 		var event domain.Event
-		if err := json.Unmarshal([]byte(cached), &event); err == nil {
+		unmarshalErr := json.Unmarshal([]byte(cached), &event)
+		if unmarshalErr != nil {
+			log.Printf("event cache payload invalid id=%s key=%s err=%v", id, key, unmarshalErr)
+		}
+		if unmarshalErr == nil {
 			log.Printf("event cache hit id=%s key=%s", id, key)
 			return &event, nil
-		} else {
-			log.Printf("event cache payload invalid id=%s key=%s err=%v", id, key, err)
 		}
-	} else {
-		log.Printf("event cache miss id=%s key=%s err=%v", id, key, err)
 	}
 
 	event, err := s.next.Get(ctx, id)
@@ -149,9 +152,9 @@ func (s *CachedService) Get(ctx context.Context, id string) (*domain.Event, erro
 	}
 	if err := s.database.Set(ctx, key, string(payload), cacheTTL); err != nil {
 		log.Printf("event cache set failed id=%s key=%s err=%v", id, key, err)
-	} else {
-		log.Printf("event cache set id=%s key=%s ttl=%s", id, key, cacheTTL)
+		return event, nil
 	}
+	log.Printf("event cache set id=%s key=%s ttl=%s", id, key, cacheTTL)
 
 	return event, nil
 }
