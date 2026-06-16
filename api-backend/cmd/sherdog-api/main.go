@@ -3,9 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
-	"strings"
 
+	"github.com/chrpa-jakub/sherdog-api/internal/config"
 	"github.com/chrpa-jakub/sherdog-api/internal/database/redis"
 	"github.com/chrpa-jakub/sherdog-api/internal/domain/event"
 	"github.com/chrpa-jakub/sherdog-api/internal/domain/fighter"
@@ -18,12 +17,17 @@ import (
 func main() {
 	log.Print("starting sherdog api")
 
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
+
 	fighterService := fighter.Service(fighterservice.NewSherdogService())
 	eventService := event.Service(eventservice.NewSherdogService())
 
-	if !cacheDisabled() {
+	if !cfg.CacheDisabled {
 		log.Print("cache enabled; connecting to redis")
-		redisOptions, err := goredis.ParseURL(os.Getenv("DB_CONN"))
+		redisOptions, err := goredis.ParseURL(cfg.DBConn)
 		if err != nil {
 			log.Fatalf("parse redis connection URL: %v", err)
 		}
@@ -39,14 +43,5 @@ func main() {
 	log.Print("listening on :8080")
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Fatalf("listen and serve: %v", err)
-	}
-}
-
-func cacheDisabled() bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("CACHE_DISABLED"))) {
-	case "1", "true", "yes", "on":
-		return true
-	default:
-		return false
 	}
 }

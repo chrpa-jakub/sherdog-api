@@ -93,6 +93,7 @@ go test ./...
 ```text
 api-backend/
   cmd/sherdog-api/          application entrypoint and service composition
+  internal/config/          typed environment configuration
   internal/domain/event/    event scraping, models, and cache decorator
   internal/domain/fighter/  fighter scraping, models, and cache decorator
   internal/database/redis/  Redis adapter for domain database interfaces

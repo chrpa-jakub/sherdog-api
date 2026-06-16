@@ -3,6 +3,7 @@ module github.com/chrpa-jakub/sherdog-api
 go 1.23
 
 require (
+	github.com/caarlos0/env/v11 v11.4.1
 	github.com/go-chi/chi/v5 v5.3.0
 	github.com/gocolly/colly v1.2.0
 	github.com/redis/go-redis/v9 v9.5.1
