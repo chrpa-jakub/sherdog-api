@@ -34,3 +34,7 @@ func (d *Database) Get(ctx context.Context, key string) (string, error) {
 func (d *Database) Set(ctx context.Context, key, value string, ttl time.Duration) error {
 	return d.client.Set(ctx, key, value, ttl).Err()
 }
+
+func (d *Database) Close() error {
+	return d.client.Close()
+}

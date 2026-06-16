@@ -1,8 +1,15 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/chrpa-jakub/sherdog-api/internal/config"
 	"github.com/chrpa-jakub/sherdog-api/internal/database/redis"
@@ -15,11 +22,17 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("sherdog api: %v", err)
+	}
+}
+
+func run() error {
 	log.Print("starting sherdog api")
 
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	fighterService := fighter.Service(fighterservice.NewSherdogService())
@@ -29,10 +42,15 @@ func main() {
 		log.Print("cache enabled; connecting to redis")
 		redisOptions, err := goredis.ParseURL(cfg.DBConn)
 		if err != nil {
-			log.Fatalf("parse redis connection URL: %v", err)
+			return fmt.Errorf("parse redis connection URL: %w", err)
 		}
 
 		database := redis.New(goredis.NewClient(redisOptions))
+		defer func() {
+			if err := database.Close(); err != nil {
+				log.Printf("close redis: %v", err)
+			}
+		}()
 		fighterService = fighterservice.NewCachedService(fighterService, database)
 		eventService = eventservice.NewCachedService(eventService, database)
 	} else {
@@ -40,8 +58,44 @@ func main() {
 	}
 
 	router := transporthttp.NewRouter(fighterService, eventService)
-	log.Print("listening on :8080")
-	if err := http.ListenAndServe(":8080", router); err != nil {
-		log.Fatalf("listen and serve: %v", err)
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
 	}
+
+	serverErr := make(chan error, 1)
+	go func() {
+		log.Print("listening on :8080")
+		serverErr <- server.ListenAndServe()
+	}()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	select {
+	case err := <-serverErr:
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+
+		return fmt.Errorf("listen and serve: %w", err)
+	case <-ctx.Done():
+		stop()
+		log.Print("shutdown signal received")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		return fmt.Errorf("shutdown server: %w", err)
+	}
+
+	if err := <-serverErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("listen and serve: %w", err)
+	}
+
+	log.Print("server stopped")
+
+	return nil
 }
