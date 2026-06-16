@@ -137,16 +137,19 @@ func NewCachedService(next domain.Service, database Database) *CachedService {
 func (s *CachedService) Get(ctx context.Context, id string) (*domain.Fighter, error) {
 	key := cacheKey(id)
 	cached, err := s.database.Get(ctx, key)
+	if err != nil {
+		log.Printf("fighter cache miss id=%s key=%s err=%v", id, key, err)
+	}
 	if err == nil {
 		var fighter domain.Fighter
-		if err := json.Unmarshal([]byte(cached), &fighter); err == nil {
+		unmarshalErr := json.Unmarshal([]byte(cached), &fighter)
+		if unmarshalErr != nil {
+			log.Printf("fighter cache payload invalid id=%s key=%s err=%v", id, key, unmarshalErr)
+		}
+		if unmarshalErr == nil {
 			log.Printf("fighter cache hit id=%s key=%s", id, key)
 			return &fighter, nil
-		} else {
-			log.Printf("fighter cache payload invalid id=%s key=%s err=%v", id, key, err)
 		}
-	} else {
-		log.Printf("fighter cache miss id=%s key=%s err=%v", id, key, err)
 	}
 
 	fighter, err := s.next.Get(ctx, id)
@@ -160,9 +163,9 @@ func (s *CachedService) Get(ctx context.Context, id string) (*domain.Fighter, er
 	}
 	if err := s.database.Set(ctx, key, string(payload), cacheTTL); err != nil {
 		log.Printf("fighter cache set failed id=%s key=%s err=%v", id, key, err)
-	} else {
-		log.Printf("fighter cache set id=%s key=%s ttl=%s", id, key, cacheTTL)
+		return fighter, nil
 	}
+	log.Printf("fighter cache set id=%s key=%s ttl=%s", id, key, cacheTTL)
 
 	return fighter, nil
 }
